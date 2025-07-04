@@ -2276,6 +2276,8 @@ static int load_dmcu_fw(struct amdgpu_device *adev)
 #endif
 	case CHIP_BONAIRE:
 	case CHIP_HAWAII:
+	case CHIP_LIVERPOOL:
+	case CHIP_GLADIUS:
 	case CHIP_KAVERI:
 	case CHIP_KABINI:
 	case CHIP_MULLINS:
@@ -5316,6 +5318,8 @@ static int amdgpu_dm_initialize_drm_device(struct amdgpu_device *adev)
 #endif
 	case CHIP_BONAIRE:
 	case CHIP_HAWAII:
+	case CHIP_LIVERPOOL:
+	case CHIP_GLADIUS:
 	case CHIP_KAVERI:
 	case CHIP_KABINI:
 	case CHIP_MULLINS:
@@ -5547,6 +5551,7 @@ static int dm_early_init(struct amdgpu_ip_block *ip_block)
 #endif
 	case CHIP_BONAIRE:
 	case CHIP_HAWAII:
+	case CHIP_GLADIUS:
 		adev->mode_info.num_crtc = 6;
 		adev->mode_info.num_hpd = 6;
 		adev->mode_info.num_dig = 6;
@@ -5564,6 +5569,7 @@ static int dm_early_init(struct amdgpu_ip_block *ip_block)
 		break;
 	case CHIP_FIJI:
 	case CHIP_TONGA:
+	case CHIP_LIVERPOOL:
 		adev->mode_info.num_crtc = 6;
 		adev->mode_info.num_hpd = 6;
 		adev->mode_info.num_dig = 7;

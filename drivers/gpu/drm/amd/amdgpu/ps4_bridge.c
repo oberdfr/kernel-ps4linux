@@ -861,6 +861,15 @@ enum drm_mode_status ps4_bridge_mode_valid(struct drm_connector *connector,
 		return MODE_OK;
 	}
 
+    /* Reject anything higher than 1080p
+     * Apparently, setting a res higher than 1920x1080 leads to black screen
+     */
+    if (mode->hdisplay > 1920 || mode->vdisplay > 1080) {
+        DRM_DEBUG_KMS("[MODE_BAD] Mode %dx%d exceeds 1080p resolution limit\n",
+                      mode->hdisplay, mode->vdisplay);
+        return MODE_BAD;
+    }
+
     /* Reject anything that exceeds HDMI 1.4 bandwith */
     if (mode->clock > HDMI_14_MAX_TMDS_CLOCK) {
 		DRM_DEBUG_KMS("[MODE_CLOCK_HIGH] Mode %dx%d@%d clock %d kHz exceeds HDMI 1.4 TMDS limit\n",

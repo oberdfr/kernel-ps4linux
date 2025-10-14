@@ -309,7 +309,7 @@ void ps4_bridge_mode_set(struct drm_bridge *bridge,
 	/* This gets called before pre_enable/enable, so we just stash
 	 * the vic ID for later */
 	mn_bridge->mode = drm_match_cea_mode(adjusted_mode);
-	DRM_DEBUG_KMS("Mode: %dx%d@%d, VIC: %d\n", 
+	DRM_INFO("Mode: %dx%d@%d, VIC: %d\n", 
 		      adjusted_mode->hdisplay, adjusted_mode->vdisplay,
 		      drm_mode_vrefresh(adjusted_mode), mn_bridge->mode);
 	

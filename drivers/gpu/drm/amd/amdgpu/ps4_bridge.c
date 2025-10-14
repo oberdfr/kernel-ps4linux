@@ -736,7 +736,7 @@ static const struct drm_display_mode mode_720p = {
 };
 /* 16 - 1920x1080@60Hz */
 static const struct drm_display_mode mode_1080p = {
-	DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED, 148500, 1920, 2008,
+	DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 148500, 1920, 2008,
 		 2052, 2200, 0, 1080, 1084, 1089, 1125, 0,
 		 DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
 	.picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9
@@ -759,7 +759,7 @@ static const struct drm_display_mode mode_1080p120 = {
 int ps4_bridge_get_modes(struct drm_connector *connector)
 {
 	struct drm_device *dev = connector->dev;
-	struct drm_display_mode *newmode;
+	struct drm_display_mode *mode;
     struct edid *edid;
 	int count = 0;
 
@@ -774,6 +774,11 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 		
 		/* Parse EDID and add all modes */
 		count = drm_add_edid_modes(connector, edid);
+
+        // Remove preferred flag from EDID modes
+        list_for_each_entry(mode, &connector->probed_modes, head) {
+            mode->type &= ~DRM_MODE_TYPE_PREFERRED;
+        }
 		
 		kfree(edid);
 		
@@ -788,20 +793,21 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
     /* Also add hardcoded modes */
 	DRM_INFO("Adding hardcoded fallback modes\n");
 
-	newmode = drm_mode_duplicate(dev, &mode_1080p);
-	drm_mode_probed_add(connector, newmode);
+	mode = drm_mode_duplicate(dev, &mode_1080p);
+    mode->type |= DRM_MODE_TYPE_PREFERRED;
+	drm_mode_probed_add(connector, mode);
     count++;
 
-	newmode = drm_mode_duplicate(dev, &mode_1080p120);
-	drm_mode_probed_add(connector, newmode);
+	mode = drm_mode_duplicate(dev, &mode_1080p120);
+	drm_mode_probed_add(connector, mode);
     count++;
 
-	newmode = drm_mode_duplicate(dev, &mode_720p);
-	drm_mode_probed_add(connector, newmode);
+	mode = drm_mode_duplicate(dev, &mode_720p);
+	drm_mode_probed_add(connector, mode);
 	count++;
 
-    newmode = drm_mode_duplicate(dev, &mode_480p);
-	drm_mode_probed_add(connector, newmode);
+    mode = drm_mode_duplicate(dev, &mode_480p);
+	drm_mode_probed_add(connector, mode);
     count++;
 
 	drm_connector_update_edid_property(connector, NULL);

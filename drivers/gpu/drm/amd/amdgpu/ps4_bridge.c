@@ -828,15 +828,6 @@ enum drm_connector_status ps4_bridge_detect(struct drm_connector *connector,
 enum drm_mode_status ps4_bridge_mode_valid(struct drm_connector *connector,
 				  const struct drm_display_mode *mode)
 {
-	int vic = drm_match_cea_mode(mode);
-
-	/* Directly allow anything that we can match up to a VIC (CEA modes) */
-	if ((vic == 16 && vic == 4 && vic == 1)) {
-        DRM_DEBUG_KMS("[MODE_OK] Mode %dx%d@%d clock %d kHz match with VIC %d\n",
-                  mode->hdisplay, mode->vdisplay,
-                  drm_mode_vrefresh(mode), mode->clock, vic);
-		return MODE_OK;
-	}
 
     /* Reject anything higher than 1080p
      * Apparently, setting a res higher than 1920x1080 leads to black screen

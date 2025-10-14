@@ -39,6 +39,7 @@
 #include <drm/drm_bridge.h>
 #include <drm/drm_encoder.h>
 
+#include <linux/firmware.h>
 #include <linux/i2c.h>
 #include <linux/i2c-algo-bit.h>
 
@@ -125,6 +126,9 @@
 #define PCI_DEVICE_ID_CUH_12XX 0x9922
 #define PCI_DEVICE_ID_CUH_2XXX 0x9923
 #define PCI_DEVICE_ID_CUH_7XXX 0x9924
+
+/* HDMI 1.4 bandwidth limit: 340 MHz pixel clock */
+#define HDMI_14_MAX_TMDS_CLOCK 340000
 
 struct edid *drm_get_edid(struct drm_connector *connector,
  				 struct i2c_adapter *adapter);
@@ -305,9 +309,15 @@ void ps4_bridge_mode_set(struct drm_bridge *bridge,
 	/* This gets called before pre_enable/enable, so we just stash
 	 * the vic ID for later */
 	mn_bridge->mode = drm_match_cea_mode(adjusted_mode);
-	DRM_DEBUG_KMS("vic mode: %d\n", mn_bridge->mode);
+	DRM_DEBUG_KMS("Mode: %dx%d@%d, VIC: %d\n", 
+		      adjusted_mode->hdisplay, adjusted_mode->vdisplay,
+		      drm_mode_vrefresh(adjusted_mode), mn_bridge->mode);
+	
+	/* If no VIC match, we'll use mode 0 and let the hardware auto-detect */
 	if (!mn_bridge->mode) {
-		DRM_ERROR("attempted to set non-CEA mode\n");
+		DRM_INFO("Non-CEA mode %dx%d@%d, using auto-detect (VIC=0)\n",
+			 adjusted_mode->hdisplay, adjusted_mode->vdisplay,
+			 drm_mode_vrefresh(adjusted_mode));
 	}
 }
 
@@ -387,19 +397,20 @@ static void ps4_bridge_enable(struct drm_bridge *bridge)
 	struct drm_device *dev = connector->dev;
 	struct pci_dev *pdev = to_pci_dev(dev->dev);
 	u8 dp[3];
+    u8 vic_mode;
 
 	DRM_DEBUG("Enable PS4_BRIDGE_ENABLE\n");
-	if (!mn_bridge->mode) {
-		DRM_ERROR("mode not available\n");
-		return;
-	}
+	
+    /* Use VIC if available, otherwise 0 for auto-detect */
+	vic_mode = mn_bridge->mode;
 
 	if(pdev->vendor != PCI_VENDOR_ID_ATI) {
 		DRM_ERROR("Invalid vendor: %04x", pdev->vendor);
 		return;
 	}
 
-	DRM_DEBUG_KMS("ps4_bridge_enable (mode: %d)\n", mn_bridge->mode);
+	DRM_DEBUG_KMS("ps4_bridge_enable (VIC: %d %s)\n", vic_mode,
+		      vic_mode == 0 ? "(AUTO-DETECT)" : "");
 
 	/* Here come the dragons */
 
@@ -766,15 +777,27 @@ enum drm_mode_status ps4_bridge_mode_valid(struct drm_connector *connector,
 {
 	int vic = drm_match_cea_mode(mode);
 
-	/* Allow anything that we can match up to a VIC (CEA modes) */
-	if (!vic || (vic != 16 && vic != 4 && vic != 63)) {
+	/* Directly allow anything that we can match up to a VIC (CEA modes) */
+	if ((vic == 16 && vic == 4 && vic == 1 && vic == 63)) {
 	// Might need to disable 63 (1920x1080-120Hz)
-
-	/*
-	if (!vic || (vic != 16 && vic != 4)) {
-	*/
-		return MODE_BAD;
+        DRM_DEBUG_KMS("[MODE_OK] Mode %dx%d@%d clock %d kHz match with VIC %d\n",
+                  mode->hdisplay, mode->vdisplay,
+                  drm_mode_vrefresh(mode), mode->clock, vic);
+		return MODE_OK;
 	}
+
+    /* Reject anything that exceeds HDMI 1.4 bandwith */
+    if (mode->clock > HDMI_14_MAX_TMDS_CLOCK) {
+		DRM_DEBUG_KMS("[MODE_CLOCK_HIGH] Mode %dx%d@%d clock %d kHz exceeds HDMI 1.4 TMDS limit\n",
+			      mode->hdisplay, mode->vdisplay,
+			      drm_mode_vrefresh(mode), mode->clock);
+		return MODE_CLOCK_HIGH;
+	}
+
+    /* Otherwise, mode is valid */
+    DRM_DEBUG_KMS("[MODE_OK] Mode %dx%d@%d clock %d kHz within HDMI 1.4 TMDS limit\n",
+                  mode->hdisplay, mode->vdisplay,
+                  drm_mode_vrefresh(mode), mode->clock);
 	return MODE_OK;
 }
 

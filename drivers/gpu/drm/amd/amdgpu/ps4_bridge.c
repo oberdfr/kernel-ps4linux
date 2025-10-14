@@ -790,19 +790,24 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 
 	newmode = drm_mode_duplicate(dev, &mode_1080p);
 	drm_mode_probed_add(connector, newmode);
+    count++;
 
 	newmode = drm_mode_duplicate(dev, &mode_1080p120);
 	drm_mode_probed_add(connector, newmode);
+    count++;
 
 	newmode = drm_mode_duplicate(dev, &mode_720p);
 	drm_mode_probed_add(connector, newmode);
-	
+	count++;
+
     newmode = drm_mode_duplicate(dev, &mode_480p);
 	drm_mode_probed_add(connector, newmode);
+    count++;
 
 	drm_connector_update_edid_property(connector, NULL);
 
-	return 0;
+    DRM_INFO("Total %d modes added\n", count);
+	return count;
 }
 
 enum drm_connector_status ps4_bridge_detect(struct drm_connector *connector,

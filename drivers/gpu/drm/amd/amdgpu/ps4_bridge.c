@@ -723,7 +723,8 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 {
 	struct drm_device *dev = connector->dev;
 	struct drm_display_mode *newmode;
-	pr_info("ps4_bridge_get_modes\n");
+    
+	DRM_DEBUG_KMS("ps4_bridge_get_modes\n");
 
 	newmode = drm_mode_duplicate(dev, &mode_1080p);
 	drm_mode_probed_add(connector, newmode);
@@ -731,10 +732,11 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 	newmode = drm_mode_duplicate(dev, &mode_1080p120);
 	drm_mode_probed_add(connector, newmode);
 
-	//newmode = drm_mode_duplicate(dev, &mode_720p);
-	//drm_mode_probed_add(connector, newmode);
-	//newmode = drm_mode_duplicate(dev, &mode_480p);
-	//drm_mode_probed_add(connector, newmode);
+	newmode = drm_mode_duplicate(dev, &mode_720p);
+	drm_mode_probed_add(connector, newmode);
+	
+    newmode = drm_mode_duplicate(dev, &mode_480p);
+	drm_mode_probed_add(connector, newmode);
 
 	drm_connector_update_edid_property(connector, NULL);
 

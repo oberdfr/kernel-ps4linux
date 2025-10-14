@@ -397,12 +397,8 @@ static void ps4_bridge_enable(struct drm_bridge *bridge)
 	struct drm_device *dev = connector->dev;
 	struct pci_dev *pdev = to_pci_dev(dev->dev);
 	u8 dp[3];
-    u8 vic_mode;
 
 	DRM_DEBUG("Enable PS4_BRIDGE_ENABLE\n");
-	
-    /* Use VIC if available, otherwise 0 for auto-detect */
-	vic_mode = mn_bridge->mode;
 
 	if(pdev->vendor != PCI_VENDOR_ID_ATI) {
 		DRM_ERROR("Invalid vendor: %04x", pdev->vendor);

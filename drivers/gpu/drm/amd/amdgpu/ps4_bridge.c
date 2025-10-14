@@ -677,6 +677,43 @@ static void ps4_bridge_post_disable(struct drm_bridge *bridge)
 	DRM_DEBUG_KMS("ps4_bridge_post_disable\n");
 }
 
+static struct edid *ps4_bridge_load_edid_firmware(struct drm_connector *connector)
+{
+	const struct firmware *fw = NULL;
+	struct edid *edid = NULL;
+	int ret;
+
+	ret = request_firmware(&fw, "ps4_edid.bin", connector->dev->dev);
+	if (ret) {
+		DRM_INFO("No firmware EDID found (ps4_edid.bin)\n");
+		return NULL;
+	}
+
+	if (fw->size < EDID_LENGTH || fw->size % EDID_LENGTH) {
+		DRM_ERROR("Invalid EDID firmware size: %zu\n", fw->size);
+		goto out;
+	}
+
+	edid = kmemdup(fw->data, fw->size, GFP_KERNEL);
+	if (!edid) {
+		DRM_ERROR("Failed to allocate EDID memory\n");
+		goto out;
+	}
+
+	/* Validate the EDID */
+	if (!drm_edid_is_valid(edid)) {
+		DRM_ERROR("Firmware EDID is invalid\n");
+		kfree(edid);
+		edid = NULL;
+	} else {
+        DRM_INFO("Loaded EDID from firmware, %zu bytes\n", fw->size);
+    }
+
+out:
+	release_firmware(fw);
+	return edid;
+}
+
 /* Hardcoded modes, since we don't really know how to do custom modes yet.
  * Other CEA modes *should* work (and are allowed if externally added) */
 
@@ -723,8 +760,33 @@ int ps4_bridge_get_modes(struct drm_connector *connector)
 {
 	struct drm_device *dev = connector->dev;
 	struct drm_display_mode *newmode;
-    
+    struct edid *edid;
+	int count = 0;
+
 	DRM_DEBUG_KMS("ps4_bridge_get_modes\n");
+
+    /* Try to load EDID from firmware */
+	edid = ps4_bridge_load_edid_firmware(connector);
+	
+	if (edid) {
+		/* Update connector's EDID property */
+		drm_connector_update_edid_property(connector, edid);
+		
+		/* Parse EDID and add all modes */
+		count = drm_add_edid_modes(connector, edid);
+		
+		kfree(edid);
+		
+		DRM_INFO("Loaded %d modes from firmware EDID\n", count);
+		
+        /* Do not return still, we might want to add default
+         * modes too in case EDID is incompatible 
+         */
+        //return count;
+	}
+
+    /* Also add hardcoded modes */
+	DRM_INFO("Adding hardcoded fallback modes\n");
 
 	newmode = drm_mode_duplicate(dev, &mode_1080p);
 	drm_mode_probed_add(connector, newmode);

@@ -405,9 +405,6 @@ static void ps4_bridge_enable(struct drm_bridge *bridge)
 		return;
 	}
 
-	DRM_DEBUG_KMS("ps4_bridge_enable (VIC: %d %s)\n", vic_mode,
-		      vic_mode == 0 ? "(AUTO-DETECT)" : "");
-
 	/* Here come the dragons */
 
 	if(pdev->device == PCI_DEVICE_ID_CUH_11XX)
